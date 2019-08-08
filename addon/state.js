@@ -1,6 +1,8 @@
-import Ember from 'ember';
-
-var get = Ember.get, set = Ember.set;
+import $ from 'jquery';
+import { guidFor } from '@ember/object/internals';
+import { A } from '@ember/array';
+import Evented from '@ember/object/evented';
+import EmberObject, { get, set, computed } from '@ember/object';
 
 /**
 @module ember
@@ -69,7 +71,7 @@ var get = Ember.get, set = Ember.set;
   @extends Ember.Object
   @uses Ember.Evented
 */
-var State = Ember.Object.extend(Ember.Evented,
+var State = EmberObject.extend(Evented,
 /** @scope State.prototype */{
   /**
     A reference to the parent state.
@@ -93,7 +95,7 @@ var State = Ember.Object.extend(Ember.Evented,
     @property path
     @type String
   */
-  path: Ember.computed(function() {
+  path: computed('parentState.path', 'name', function() {
     var parentPath = get(this, 'parentState.path'),
         path = get(this, 'name');
 
@@ -132,7 +134,7 @@ var State = Ember.Object.extend(Ember.Evented,
   */
   init() {
     var states = get(this, 'states');
-    set(this, 'childStates', Ember.A());
+    set(this, 'childStates', A());
 
     var name, value;
 
@@ -148,7 +150,8 @@ var State = Ember.Object.extend(Ember.Evented,
       for (name in this) {
         if (name === "constructor") { continue; }
 
-        if (value = this[name]) {
+        value = this[name];
+        if (value) {
           this.setupChild(states, name, value);
         }
       }
@@ -177,7 +180,7 @@ var State = Ember.Object.extend(Ember.Evented,
     @param transitions
   */
   setPathsCache(stateManager, path, transitions) {
-    let stateManagerTypeGuid = Ember.guidFor(stateManager.constructor);
+    let stateManagerTypeGuid = guidFor(stateManager.constructor);
     let pathsCaches = get(this, 'pathsCaches');
     let pathsCacheForManager = pathsCaches[stateManagerTypeGuid] || {};
 
@@ -196,7 +199,7 @@ var State = Ember.Object.extend(Ember.Evented,
     @param path
   */
   getPathsCache(stateManager, path) {
-    let stateManagerTypeGuid = Ember.guidFor(stateManager.constructor);
+    let stateManagerTypeGuid = guidFor(stateManager.constructor);
     let pathsCaches = this.get('pathsCaches');
     let pathsCacheForManager = pathsCaches[stateManagerTypeGuid] || {};
 
@@ -244,7 +247,7 @@ var State = Ember.Object.extend(Ember.Evented,
     @property isLeaf
     @type Boolean
   */
-  isLeaf: Ember.computed(function() {
+  isLeaf: computed('childStates.[]', function() {
     return !this.get('childStates').length;
   }),
 
@@ -306,7 +309,7 @@ State.reopenClass({
 
     var transitionFunction = function(stateManager, contextOrEvent) {
       var contexts = [],
-          Event = Ember.$ && Ember.$.Event;
+          Event = $ && $.Event;
 
       if (contextOrEvent && (Event && contextOrEvent instanceof Event)) {
         if (contextOrEvent.hasOwnProperty('contexts')) {

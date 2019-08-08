@@ -1,13 +1,9 @@
-import Ember from 'ember';
+import { isEmpty } from '@ember/utils';
+import EmberError from '@ember/error';
+import { assert } from '@ember/debug';
+import { computed, get } from '@ember/object';
 import State from './state';
 import Transition from './transition';
-
-/**
-@module ember
-@submodule ember-states
-*/
-
-const get = Ember.get;
 
 function forEach(array, callback, binding) {
   for (let i=0; i<array.length; i++) {
@@ -42,9 +38,9 @@ function sendRecursively(event, currentState, isUnhandledPass) {
   if (typeof action === 'function') {
     if (log) {
       if (isUnhandledPass) {
-        Ember.Logger.log(`STATEMANAGER: Unhandled event '${event}' being sent to state ${currentState.get('path')}.`);
+        console.log(`STATEMANAGER: Unhandled event '${event}' being sent to state ${currentState.get('path')}.`);
       } else {
-        Ember.Logger.log(`STATEMANAGER: Sending event '${event}' to state ${currentState.get('path')}.`);
+        console.log(`STATEMANAGER: Sending event '${event}' to state ${currentState.get('path')}.`);
       }
     }
 
@@ -518,7 +514,7 @@ export default State.extend({
 
     if (initialState) {
       this.transitionTo(initialState);
-      Ember.assert('Failed to transition to initial state "' + initialState + '"', !!this.get('currentState'));
+      assert('Failed to transition to initial state "' + initialState + '"', !!this.get('currentState'));
     }
   },
 
@@ -538,7 +534,9 @@ export default State.extend({
    @property currentPath
    @type String
   */
-  currentPath: Ember.computed.alias('currentState.path'),
+  currentPath: computed('currentState.path', function() {
+    return this.get('currentState.path') || null;
+  }),
 
   /**
     The name of transitionEvent that this stateManager will dispatch
@@ -568,7 +566,7 @@ export default State.extend({
   */
   send(event) {
     var contexts = [].slice.call(arguments, 1);
-    Ember.assert('Cannot send event "' + event + '" while currentState is ' + get(this, 'currentState'), get(this, 'currentState'));
+    assert('Cannot send event "' + event + '" while currentState is ' + get(this, 'currentState'), get(this, 'currentState'));
     return sendEvent.call(this, event, contexts, false);
   },
 
@@ -583,7 +581,7 @@ export default State.extend({
   */
   unhandledEvent(manager, event) {
     if (get(this, 'errorOnUnhandledEvent')) {
-      throw new Ember.Error(this.toString() + " could not respond to event " + event + " in state " + get(this, 'currentState.path') + ".");
+      throw new EmberError(this.toString() + " could not respond to event " + event + " in state " + get(this, 'currentState.path') + ".");
     }
   },
 
@@ -680,7 +678,7 @@ export default State.extend({
   */
   transitionTo(path) {
     // XXX When is transitionTo called with no path
-    if (Ember.isEmpty(path)) { return; }
+    if (isEmpty(path)) { return; }
 
     // The ES6 signature of this function is `path, ...contexts`
     let currentState = get(this, 'currentState') || this;
@@ -758,7 +756,7 @@ export default State.extend({
       if (!resolveState) {
         enterStates = this.getStatesInPath(this, path);
         if (!enterStates) {
-          Ember.assert('Could not find state for path: "'+path+'"');
+          assert('Could not find state for path: "'+path+'"');
           return;
         }
       }
@@ -859,7 +857,7 @@ export default State.extend({
     }, this);
 
     forEach(transition.enterStates, function(state) {
-      if (log) { Ember.Logger.log("STATEMANAGER: Entering " + get(state, 'path')); }
+      if (log) { console.log("STATEMANAGER: Entering " + get(state, 'path')); }
       state.trigger('enter', this);
     }, this);
 
